@@ -1,53 +1,69 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Media;
-using System.Text;
-using System.Threading;
-using System.Xml.Linq;
-using NAudio.SoundFont;
+using System.Linq;
 using System.Speech.Synthesis;
-using System.Net.Http.Headers;
+using System.Threading;
+
 namespace ChatbotApp
+
 {
     class Program
+
     {
+
+        static string userName = "";
+        static string favouriteTopic = ""
+        static Dictionary<string, Action> keywordActions = new Dictionary<string, Action>();
+        static List<string> phishingTips = new List<string>
+
+        {
+            "Be cautious of emails asking for personal information. Scammers often disguise themselves as trusted organisations.",
+            "Always check the sender's email address before clicking links.",
+            "Avoid downloading attachments from unknown sources."
+        };
+
+
         static void Main(string[] args)
         {
-            // Play the voice greeting
+            // Play the voice greeting 
             PlayVoiceGreeting();
 
-            // Display ASCII art (Cybersecurity Awareness Bot logo)
+
+            // Display ASCII art 
             DisplayAsciiLogo();
 
-            // Greet the user and ask for their name
+
+            // Ask for user's name 
             Console.Write("What is your name? ");
-            string userName = Console.ReadLine();
+            userName = Console.ReadLine();
             if (string.IsNullOrEmpty(userName))
             {
                 Console.WriteLine("You didn't enter a name. Please try again.");
                 return;
             }
+
             Console.WriteLine($"Hello, {userName}! Welcome to the Cybersecurity Awareness Bot!");
 
-            // Simulate typing effect and ask user about how they need help
+
             TypeText("I am here to help you stay safe online by providing some cybersecurity tips...");
 
-            // Respond to basic user queries
-            RespondToQueries();
+            // Initialize keyword actions 
+            InitialiseKeywordActions();
 
-            // Example input validation handling
-            InputValidation();
+
+            // Start chat 
+            ChatLoop();
         }
 
-        // Method to play the voice greeting when the chatbot starts
+
         static void PlayVoiceGreeting()
         {
             try
+
             {
                 SpeechSynthesizer synth = new SpeechSynthesizer();
                 Console.WriteLine("Welcome to the Cybersecurity Awareness chatbot!");
-                synth.Speak("Welcome to the Cybersecurity Awareness chatbot!, Ask me anything about online safety.");
-
+                synth.Speak("Welcome to the Cybersecurity Awareness chatbot! Ask me anything about online safety.");
             }
             catch (Exception ex)
             {
@@ -55,86 +71,156 @@ namespace ChatbotApp
             }
         }
 
-        // Method to display the ASCII logo or art of the chatbot
+
         static void DisplayAsciiLogo()
         {
-            Console.WriteLine(@"
-ʕ•ᴥ•ʔ
+            Console.WriteLine(@" 
+ʕ•ᴥ•ʔ 
 ");
         }
 
-        // Method to simulate typing effect
+
         static void TypeText(string message)
         {
             foreach (char c in message)
             {
                 Console.Write(c);
-                Thread.Sleep(50); // Simulate typing delay
+                Thread.Sleep(30);
             }
             Console.WriteLine();
         }
 
-        // Method to respond to user queries about the chatbot's purpose
-        static void RespondToQueries()
+
+        static void InitialiseKeywordActions()
+        {
+            keywordActions["password"] = () =>
+                Console.WriteLine("Make sure to use strong, unique passwords for each account. Avoid using personal details in your passwords.");
+
+
+            keywordActions["scam"] = () =>
+                Console.WriteLine("Watch out for online scams. Always verify the source before clicking any links or providing personal info.");
+
+
+            keywordActions["privacy"] = () =>
+            {
+                Console.WriteLine("Protect your privacy by limiting the personal info you share online and reviewing your account settings.");
+                favouriteTopic = "privacy";
+                Console.WriteLine("Great! I'll remember that you're interested in privacy.");
+            };
+
+
+            keywordActions["phishing"] = () =>
+            {
+                Random rnd = new Random();
+                string tip = phishingTips[rnd.Next(phishingTips.Count)];
+                Console.WriteLine(tip);
+            };
+        }
+
+
+        static void ChatLoop()
         {
             Console.WriteLine("Ask me anything about cybersecurity. Type 'exit' to quit.");
-            string input;
-            while ((input = Console.ReadLine().ToLower()) != "exit")
+            while (true)
             {
-                if (input == "how are you?")
+                Console.Write("> ");
+                string input = Console.ReadLine()?.ToLower();
+                if (string.IsNullOrWhiteSpace(input))
                 {
-                    Console.WriteLine("I'm doing well, thank you for asking!");
+                    Console.WriteLine("I didn’t catch that. Can you say it again?");
+                    continue;
                 }
-                else if (input == "what's your purpose?")
+
+
+                if (input == "exit") break;
+
+                if (DetectSentiment(input)) continue;
+
+                bool found = false;
+
+                foreach (var keyword in keywordActions.Keys)
+
                 {
-                    Console.WriteLine("My purpose is to help you stay safe online by providing cybersecurity tips and answering your questions.");
+                    if (input.Contains(keyword))
+
+                    {
+                        keywordActions[keyword].Invoke();
+                        if (!string.IsNullOrEmpty(favouriteTopic))
+                        {
+                            Console.WriteLine($"As someone interested in {favouriteTopic}, this is especially useful.");
+                        }
+
+                        found = true;
+                        break;
+                    }
                 }
-                else if (input == "what can I ask you about?")
+
+
+
+                if (!found)
                 {
-                    Console.WriteLine("You can ask me about topics like password safety, phishing, and safe browsing.");
-                }
-                else if (input == "what is phishing?")
-                {
-                    Console.WriteLine("Phishing is a kind of internet fraud in which criminals pose as trustworthy organizations in order to fool victims into divulging private information, such as credit card numbers or passwords.");
-                }
-                else if (input == "how can I create a strong password?")
-                {
-                    Console.WriteLine("A combination of capital and lowercase letters, digits, and special characters should be included in a strong password.  Don't use information that can be guessed, such as names or dates of birth.");
-                }
-                else if (input == "what is two-factor authentication?")
-                {
-                    Console.WriteLine("An additional layer of protection known as two-factor authentication (2FA) requires you to confirm your identity using two distinct means, typically a password and a code that you know (such as a phone number or email address).");
-                }
-                else if (input == "how do I stay safe on social media?")
-                {
-                    Console.WriteLine("To stay safe on social media, avoid sharing personal information, be cautious about friend requests, and regularly update your privacy settings to control who sees your posts.");
-                }
-                else if (input == "what should I do if I receive a suspicious email?")
-                {
-                    Console.WriteLine("If you receive a suspicious email, don't click on any links or open attachments. Verify the sender's email address and contact the organization directly to confirm the email's legitimacy.");
-                }
-                else
-                {
-                    Console.WriteLine("I didn't quite understand that. Could you rephrase?");
+                    HandleDefaultQueries(input);
                 }
             }
         }
 
 
-        // Method to handle input validation and guide the user if no valid input is entered
-        static void InputValidation()
-        {
-            Console.Write("Please type a question: ");
-            string userInput = Console.ReadLine();
 
-            if (string.IsNullOrWhiteSpace(userInput))
+        static bool DetectSentiment(string input)
+
+        {
+            if (input.Contains("worried") || input.Contains("scared"))
             {
-                Console.WriteLine("You didn't enter anything. Please type a valid question.");
+                Console.WriteLine("It's completely understandable to feel that way. Cyber threats can be intimidating, but I'm here to help.");
+                return true;
             }
-            else
+
+            else if (input.Contains("frustrated") || input.Contains("confused"))
+
             {
-                Console.WriteLine("Thank you for your input! Now, how else can I help you?");
+                Console.WriteLine("No worries! Cybersecurity can be complex. Let me explain things more simply.");
+                return true;
+            }
+
+            else if (input.Contains("curious") || input.Contains("interested"))
+
+            {
+                Console.WriteLine("Curiosity is great! Let's explore some cybersecurity topics together.");
+                return true;
+            }
+
+            return false;
+
+        }
+
+
+
+        static void HandleDefaultQueries(string input)
+
+        {
+            if (input.Contains("how are you"))
+
+            {
+                Console.WriteLine("I'm just a bunch of code, but I'm doing well! Thanks for asking.");
+            }
+
+            else if (input.Contains("your purpose"))
+            {
+                Console.WriteLine("My purpose is to help you stay safe online by sharing cybersecurity tips.");
+            }
+
+            else if (input.Contains("what can i ask"))
+
+            {
+                Console.WriteLine("You can ask about passwords, phishing, scams, privacy, and staying safe online.");
+            }
+
+            else
+
+            {
+                Console.WriteLine("I'm not sure I understand. Can you try rephrasing?");
             }
         }
     }
 }
+
